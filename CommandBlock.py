@@ -41,3 +41,10 @@ class CommandBlock:
                 out += self.command_list[i] + ' (' + str(self.triggers_list[i]) + ') {' + str(self.labels_list[i]) + '};\n'
         return out
 
+    def write(self, fname):
+        ''' Writes out to file. '''
+        tableString = self.make_table()
+        f = open(fname, 'w')
+        f.write(tableString)
+        f.close()
+

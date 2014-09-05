@@ -48,7 +48,7 @@ def stand_up():
         ss( 'front-center', [0, 0, 0, 0.5]  ),
         ss( 'center',       [0, 0, 0, -0.5] ),
         ss( 'back-center',  [0, 0, 0, 0.7]  ),
-        ss( 'back-center',  [0, 0, 0, 0,7]  ),
+        ss( 'back-right',  [0, 0, 0, 0.7]  ),
         ss( 'back-left',    [0, 0, 0, 0.7]  ),
     ])
 
@@ -59,10 +59,19 @@ def drive_forward(angle):
 def turn(angle):
     ''' Makes the center joints turn by specified angle. '''
     return parallel([ ss( 'back-center', {'front':angle} ),
-                      ss( 'center', {'front':angle} ),
+                      ss( 'center', {'front':-angle} ),
      ])
 
 c = CommandBlock()
-r = series([ stand_up(), drive_forward(6) ])
+r = series([ stand_up(),
+        drive_forward(6),
+        turn(0.4),
+        drive_forward(12),
+        turn(-0.4),
+        drive_forward(18),
+        turn(0),
+        drive_forward(24),
+    ])
 c.stitch( r )
 print c
+c.write('car_auto.gait')
