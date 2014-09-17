@@ -8,28 +8,51 @@ class CommandBlock:
         self.command_list = []
         self.triggers_list = []
         self.labels_list = []
-        self.trigger = 0
+        self.Ns = 0 # number of series blocks
 
     def __repr__(self):
         return self.make_table()
 
+    def stitch(self, relativeBlock, firstTrigger='START', lastLabel='END'):
+        ''' Stitches a RelativeBlock onto this CommandBlock with specified first
+        trigger and last label. '''
+        # Base case: relativeBlock is a raw command string
+        if isinstance(relativeBlock, str):
+            self.appendCommand(relativeBlock, firstTrigger, lastLabel)
+        elif relativeBlock.type == 'series':
+            self.stitchSeries(relativeBlock, firstTrigger, lastLabel)
+        elif relativeBlock.type == 'parallel':
+            self.stitchParallel(relativeBlock, firstTrigger, lastLabel)
 
-    def stitch(self, relativeBlock):
-        ''' Stitches a RelativeBlock onto this CommandBlock. '''
-        for block in relativeBlock.block_list:
-            if isinstance(block,str):       # raw strings are commands.
-                self.appendCommand(block)
-                #pdb.set_trace()
-            else: # it's a series or parallel block.
-                if relativeBlock.type == 'series': # the iterator increases for series blocks.
-                    self.trigger += 1
-                self.stitch(block)
+    def stitchSeries(self, seriesBlock, firstTrigger, lastLabel):
+        ''' Stitches a series block. The first element has trigger firstTrigger,
+        the last element has label lastLabel, and everything in the middle is a
+        linked list.'''
+        blockName = str(self.Ns)+'-'
+        self.Ns += 1
+        N = len(seriesBlock.block_list)
+        trigger = firstTrigger
+        for (count, block) in enumerate(seriesBlock.block_list):
+            if count == N-1: # we're processing the last block
+                self.stitch(block, trigger, lastLabel)
+                break
+            label = blockName + str(count)
+            self.stitch(block, trigger, label)
+            trigger = label
 
-    def appendCommand(self, command_string):
-        ''' Appends the command string to this CommandBlock, using the current trigger value. '''
+    def stitchParallel(self, parallelBlock, firstTrigger, lastLabel):
+        ''' Stitches a parallel block. Each element of a parallel block will have
+        the same first trigger and last label. '''
+        #blockName = 'p'+str(self.Np)+'-'
+        #self.Np += 1
+        for block in parallelBlock.block_list:
+            self.stitch(block, firstTrigger, lastLabel)
+
+    def appendCommand(self, command_string, trigger, label):
+        ''' Appends the command string to this CommandBlock. '''
         self.command_list.append( command_string )
-        self.triggers_list.append( self.trigger )
-        self.labels_list.append( self.trigger + 1 )
+        self.triggers_list.append( trigger )
+        self.labels_list.append( label )
 
     def make_table(self):
         ''' Returns the formatted table for this commandBlock. '''
