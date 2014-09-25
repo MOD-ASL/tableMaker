@@ -63,29 +63,13 @@ def sms(module_name, positions):
 
 c = CommandBlock()
 r = series([ stand_up(),
-        drive_forward(18),
+        drive_forward(3),
         turn(.3),
-        drive_forward(20),
+        drive_forward(12),
+        turn(-0.3),
+        drive_forward(21),
         turn(0),
-        drive_forward(24),
-        #turn(.3),
-        #drive_forward(26),
-        #turn(0),
-        #drive_forward(28),
-        #turn(.3),
-        #drive_forward(30),
-        #turn(0),
-        #drive_forward(32),
-        #turn(.3),
-        #drive_forward(34),
-        #turn(0),
-        #drive_forward(36),
-        #turn(.3),
-        #drive_forward(38),
-        #turn(0),
-        #drive_forward(40),
-        #turn(.3),
-        #drive_forward(42),
+        drive_forward(30)
     ])
 c.stitch( r )
 print c
