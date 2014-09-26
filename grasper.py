@@ -22,7 +22,7 @@ class Grasper:
 			self.sms('center', {'left':pi/2}),
 			self.sms('center', {'right':pi/2}),
 			#'Module_1 p0 p0 p0 p0 [1500]',
-			self.janky_pause(1500),
+			self.janky_pause(3000),
 		])
 
 	def grasp_ready_position(self):

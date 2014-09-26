@@ -19,6 +19,16 @@ class Walker:
 		    'back-right-ankle':13,
 		}
 
+		self.grasper_names = {
+		'center':0,
+		'left-shoulder':4,
+		'right-shoulder':1,
+		'left-elbow':5,
+		'right-elbow':2,
+		'left-wrist':6,
+		'right-wrist':3,
+		}
+
 	def stand_up(self):
 		''' Makes walker assume a neutral standing position '''
 		hipRot = pi/3
@@ -57,10 +67,62 @@ class Walker:
 		relativeBlock = series([ self.stand_up(), 'Module_0 p0 p0 p0 p0 [1000]', self.walk_cycle(1) ])
 		c.stitch( relativeBlock )
 		print c
-		c.write('walker_auto.gait')
+		c.write('walker-auto.gait')
+#----------------------------------------------------
+# Grasping functions
+	def become_grasper(self):
+		''' Commands the walker to bend down and get its legs into the right position
+		to act as a grasper. '''
+		sms = lambda module_name, positions: self.sms(module_name, positions, self.grasper_names) 
+		bend_down = parallel([ sms(joint, {'center':0}) for joint in ['left-elbow', 'right-elbow', 'left-wrist', 'right-wrist'] ])
+		unrotate_legs = parallel([ sms(joint, {'front':0}) for joint in ['right-shoulder', 'left-elbow'] ])
+		bend_middle = self.sms('center-back', {'center':pi/3})
+		flattening_angle = pi/3
+		make_body_flat = parallel([ self.sms('center-back', {'front':(pi/2-flattening_angle)}), self.sms('back-right-hip', {'front':pi/2+flattening_angle}) ])
+		bend_back = self.sms('center-back',	 {'center':0})
+		#pi/2+pi/3
+		
+		# note that make_body_flat uses self.sms (not sms), and bends by the same angle as the back knee joints to bring the body flat.
 
-	def sms(self, module_name, positions):
+		return series([ bend_down, unrotate_legs, bend_middle])#, make_body_flat, bend_back ])
+
+	def grasp_ready_position(self):
+		''' Moves to the grasp-ready position. '''
+		shoulder_pos = 1.2
+		elbow_pos = 0.5
+		wrist_pos = 1.3
+		return self.set_arm_state(shoulder_pos,elbow_pos,wrist_pos)
+
+	def squeeze_together(self):
+		''' Squeezes together to grasp an object '''
+		shoulder_pos = pi/2
+		elbow_pos = 0.3 
+		wrist_pos = pi/2 - elbow_pos
+		return self.set_arm_state(shoulder_pos, elbow_pos, wrist_pos)
+
+	def set_arm_state(self, shoulder_pos, elbow_pos, wrist_pos):
+		''' Sets the state of both arms as specified. '''
+		sms = lambda module_name, positions: self.sms(module_name, positions, self.grasper_names) 
+		return parallel([
+			sms('left-shoulder', {'center':-shoulder_pos}),
+			sms('right-shoulder', {'center':shoulder_pos}),
+			sms('right-elbow', {'center':elbow_pos}),
+			sms('left-elbow', {'center':-elbow_pos}),
+			sms('left-wrist', {'center':-wrist_pos}),
+			sms('right-wrist', {'center':wrist_pos}),
+		])
+
+	def janky_pause(self, time):
+		''' A janky implementation of pausing for the requested number of milliseconds. '''
+		sms = lambda module_name, positions: self.sms(module_name, positions, self.grasper_names) 
+		return sms('center', {'left':0, 'right':0}) + ' [' + str(time) + ']'	
+
+
+#---------------------------------------------------
+	def sms(self, module_name, positions, names = None):
 	    ''' Sets module state. Positions is a dict or a list. '''
+	    if names == None:
+	    	names = self.names
 	    if isinstance(positions, dict):
 	        p = ['i', 'i', 'i', 'i']
 	        for i,key in enumerate(['front', 'left', 'right', 'center']):
@@ -74,7 +136,7 @@ class Walker:
 	    else:
 	        assert(False)
 	    out = ''
-	    out += 'Module_' + str(self.names[module_name])
+	    out += 'Module_' + str(names[module_name])
 	    for i in xrange(0,4):
 	        if p[i] is 'i':
 	            out += ' i'
@@ -85,4 +147,10 @@ class Walker:
 
 if __name__=='__main__':
 	w = Walker()
-	w.walk()
+	c = CommandBlock()
+	#r = series([ w.stand_up(), w.bend_down_in_front(), w.grasp_ready_position(), w.squeeze_together() ])
+	#r = series([ w.become_grasper(), w.grasp_ready_position(), w.janky_pause(750), w.squeeze_together() ])
+	r = series([ w.stand_up(), w.janky_pause(1000), w.become_grasper(), w.grasp_ready_position(), w.janky_pause(500), w.squeeze_together() ])
+	c.stitch(r)
+	print c
+	c.write('walker-auto.gait')
